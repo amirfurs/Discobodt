@@ -356,6 +356,10 @@ async def create_server(request: ServerCreationRequest):
 async def get_created_servers():
     """Get list of created servers"""
     servers = await db.created_servers.find().sort("created_at", -1).to_list(100)
+    # Convert MongoDB ObjectId to string for JSON serialization
+    for server in servers:
+        if '_id' in server:
+            del server['_id']  # Remove MongoDB ObjectId
     return servers
 
 @api_router.delete("/templates/{template_id}")
