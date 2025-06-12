@@ -103,15 +103,7 @@ async def create_discord_server(template: DiscordTemplate, server_name: str) -> 
 
         # Create the guild (server)
         try:
-            async def create_guild_task():
-                return await bot.create_guild(name=server_name)
-            
-            guild = await asyncio.wait_for(create_guild_task(), timeout=30.0)
-        except asyncio.TimeoutError:
-            return ServerCreationResponse(
-                success=False,
-                message="Timeout while creating server. Discord API may be slow."
-            )
+            guild = await bot.create_guild(name=server_name)
         except discord.HTTPException as e:
             if e.status == 403:
                 return ServerCreationResponse(
