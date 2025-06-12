@@ -1,0 +1,93 @@
+{
+  "name": "Gaming Server Template",
+  "description": "قالب سيرفر للألعاب مع قنوات منظمة",
+  "icon_url": "https://example.com/icon.png",
+  "roles": [
+    {
+      "name": "المدير",
+      "color": "#ff0000",
+      "permissions": 8,
+      "mentionable": true,
+      "hoist": true
+    },
+    {
+      "name": "مشرف",
+      "color": "#00ff00",
+      "permissions": 268435456,
+      "mentionable": true,
+      "hoist": true
+    },
+    {
+      "name": "عضو",
+      "color": "#0000ff",
+      "permissions": 104324161,
+      "mentionable": false,
+      "hoist": false
+    }
+  ],
+  "channels": [
+    {
+      "name": "📢 الإعلانات",
+      "type": "category",
+      "position": 0
+    },
+    {
+      "name": "welcome",
+      "type": "text",
+      "category": "📢 الإعلانات",
+      "position": 1
+    },
+    {
+      "name": "rules",
+      "type": "text",
+      "category": "📢 الإعلانات",
+      "position": 2
+    },
+    {
+      "name": "🎮 الألعاب",
+      "type": "category",
+      "position": 3
+    },
+    {
+      "name": "general-gaming",
+      "type": "text",
+      "category": "🎮 الألعاب",
+      "position": 4
+    },
+    {
+      "name": "minecraft",
+      "type": "text",
+      "category": "🎮 الألعاب",
+      "position": 5
+    },
+    {
+      "name": "valorant",
+      "type": "text",
+      "category": "🎮 الألعاب",
+      "position": 6
+    },
+    {
+      "name": "🔊 الصوت",
+      "type": "category",
+      "position": 7
+    },
+    {
+      "name": "General Voice",
+      "type": "voice",
+      "category": "🔊 الصوت",
+      "position": 8
+    },
+    {
+      "name": "Gaming Room 1",
+      "type": "voice",
+      "category": "🔊 الصوت",
+      "position": 9
+    },
+    {
+      "name": "Gaming Room 2",
+      "type": "voice",
+      "category": "🔊 الصوت",
+      "position": 10
+    }
+  ]
+}
