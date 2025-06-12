@@ -15,6 +15,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 import threading
+import queue
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -33,6 +34,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # Global variables for bot status
 bot_ready = False
 bot_user = None
+
+# Queue for handling server creation requests
+server_creation_queue = queue.Queue()
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -90,10 +94,39 @@ async def on_ready():
     bot_ready = True
     bot_user = bot.user
     print(f'{bot.user} has logged in to Discord!')
+    
+    # Start the server creation worker
+    asyncio.create_task(server_creation_worker())
+
+# Server creation worker
+async def server_creation_worker():
+    """Worker to handle server creation requests from queue"""
+    while True:
+        try:
+            if not server_creation_queue.empty():
+                request_data = server_creation_queue.get()
+                template = request_data['template']
+                server_name = request_data['server_name']
+                result_queue = request_data['result_queue']
+                
+                try:
+                    result = await create_discord_server_internal(template, server_name)
+                    result_queue.put(result)
+                except Exception as e:
+                    error_result = ServerCreationResponse(
+                        success=False,
+                        message=f"Worker error: {str(e)}"
+                    )
+                    result_queue.put(error_result)
+                    
+            await asyncio.sleep(0.1)  # Small delay to prevent busy waiting
+        except Exception as e:
+            print(f"Error in server creation worker: {e}")
+            await asyncio.sleep(1)
 
 # Discord Bot Functions
-async def create_discord_server(template: DiscordTemplate, server_name: str) -> ServerCreationResponse:
-    """Create a Discord server based on template"""
+async def create_discord_server_internal(template: DiscordTemplate, server_name: str) -> ServerCreationResponse:
+    """Internal function to create a Discord server"""
     try:
         if not bot_ready:
             return ServerCreationResponse(
@@ -108,7 +141,7 @@ async def create_discord_server(template: DiscordTemplate, server_name: str) -> 
             if e.status == 403:
                 return ServerCreationResponse(
                     success=False,
-                    message="Bot doesn't have permission to create servers. Please ensure the bot has 'Create Guild' permission."
+                    message="Bot doesn't have permission to create servers. Please check bot permissions."
                 )
             else:
                 return ServerCreationResponse(
@@ -190,16 +223,39 @@ async def create_discord_server(template: DiscordTemplate, server_name: str) -> 
             message=f"Server '{server_name}' created successfully!"
         )
 
-    except discord.HTTPException as e:
-        return ServerCreationResponse(
-            success=False,
-            message=f"Discord API error: {str(e)}"
-        )
     except Exception as e:
         return ServerCreationResponse(
             success=False,
             message=f"Unexpected error: {str(e)}"
         )
+
+async def create_discord_server(template: DiscordTemplate, server_name: str) -> ServerCreationResponse:
+    """Queue-based server creation function"""
+    result_queue = queue.Queue()
+    
+    # Add request to queue
+    server_creation_queue.put({
+        'template': template,
+        'server_name': server_name,
+        'result_queue': result_queue
+    })
+    
+    # Wait for result (with timeout)
+    timeout = 60  # 60 seconds timeout
+    start_time = asyncio.get_event_loop().time()
+    
+    while True:
+        if not result_queue.empty():
+            return result_queue.get()
+            
+        current_time = asyncio.get_event_loop().time()
+        if current_time - start_time > timeout:
+            return ServerCreationResponse(
+                success=False,
+                message="Server creation timed out. Please try again."
+            )
+            
+        await asyncio.sleep(0.1)
 
 # API Routes
 @api_router.get("/")
